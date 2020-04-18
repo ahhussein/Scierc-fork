@@ -1,0 +1,4 @@
+numpy
+tensorflow==1.8
+pyhocon
+tensorflow_hub
