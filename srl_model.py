@@ -105,6 +105,8 @@ class SRLModel(object):
     if self.config["relation_weight"] > 0:
       flat_candidate_entity_scores = get_unary_scores(
           candidate_span_emb, self.config, self.dropout, 1, "entity_scores")  # [num_candidates,]
+      tf.summary.histogram("entity_unary_scores", flat_candidate_entity_scores)
+
       candidate_entity_scores = tf.gather(
           flat_candidate_entity_scores, candidate_span_ids) + spans_log_mask  # [num_sentences, max_num_candidates] 
       # [num_sentences, max_num_ents], ... [num_sentences,], [num_sentences, max_num_ents] 
@@ -120,6 +122,8 @@ class SRLModel(object):
     if self.config["coref_weight"] > 0:
       candidate_mention_scores = get_unary_scores(
           candidate_span_emb, self.config, self.dropout, 1, "mention_scores")  # [num_candidates]
+      tf.summary.histogram("mentions_unary_scores", candidate_mention_scores)
+
       #if self.config["span_score_weight"] > 0:
       #  candidate_mention_scores += self.config["span_score_weight"] * flat_span_scores
 
@@ -175,6 +179,8 @@ class SRLModel(object):
       antecedent_scores, antecedent_emb, pair_emb = get_antecedent_scores(
           mention_emb, mention_scores, antecedents, self.config, self.dropout
       )  # [k, max_ant]
+      tf.summary.histogram("ant_scores", antecedent_scores)
+
       antecedent_scores = tf.concat([
           tf.zeros([k, 1]), antecedent_scores + antecedent_log_mask], 1)  # [k, max_ant+1]
 
@@ -191,6 +197,7 @@ class SRLModel(object):
       rel_scores = get_rel_scores(
           entity_emb, entity_scores, len(self.data.rel_labels), self.config, self.dropout
       )  # [num_sentences, max_num_ents, max_num_ents, num_labels]
+      tf.summary.histogram("rel_scores_2d", rel_scores)
       rel_loss = get_rel_softmax_loss(
           rel_scores, rel_labels, num_entities)  # [num_sentences, max_num_ents, max_num_ents]
       predict_dict.update({
@@ -240,6 +247,7 @@ class SRLModel(object):
       flat_ner_scores = get_unary_scores(
           candidate_span_emb, self.config, self.dropout, len(self.data.ner_labels) - 1,
           "ner_scores")  # [num_candidates, num_labels-1]
+
       if self.config["span_score_weight"] > 0:
         #flat_ner_scores += self.config["span_score_weight"] * tf.expand_dims(flat_span_scores, 1)
         flat_ner_scores += self.config["span_score_weight"] * tf.expand_dims(flat_candidate_entity_scores, 1)
@@ -247,6 +255,7 @@ class SRLModel(object):
           flat_ner_scores, candidate_span_ids
       ) + tf.expand_dims(spans_log_mask, 2)  # [num_sentences, max_num_candidates, num_labels-1]
       ner_scores = tf.concat([dummy_scores, ner_scores], 2)  # [num_sentences, max_num_candidates, num_labels]
+      tf.summary.histogram("ner_scores", ner_scores)
 
       ner_loss = get_softmax_loss(ner_scores, gold_ner_labels, candidate_mask)  # [num_sentences]
       ner_loss = tf.reduce_sum(ner_loss) # / tf.to_float(num_sentences)  # []
