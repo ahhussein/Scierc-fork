@@ -55,6 +55,8 @@ class LSGNData(object):
   def __init__(self, config):
     self.config = config
     self.context_embeddings = util.EmbeddingDictionary(config["context_embeddings"])
+
+    # TODO-Ahmed what is head embeddings
     self.head_embeddings = util.EmbeddingDictionary(config["head_embeddings"],
                                                     maybe_cache=self.context_embeddings)
     self.char_embedding_size = config["char_embedding_size"]
@@ -64,14 +66,19 @@ class LSGNData(object):
     self.lm_hub = None
     self.lm_layers = 0  # TODO: Remove these.
     self.lm_size = 0
+
+    # Not applied in the best experiment case
     if config["lm_path"]:
       if "tfhub" in config["lm_path"]:
         print "Using tensorflow hub:", config["lm_path"]
         self.lm_hub = hub.Module(config["lm_path"].encode("utf-8"), trainable=False) 
       else:
+
+        # TODO-Ahmed investigate lm
         self.lm_file = h5py.File(self.config["lm_path"], "r")
       self.lm_layers = self.config["lm_layers"]
       self.lm_size = self.config["lm_size"]
+
 
     # self.adjunct_roles, self.core_roles = split_srl_labels(
     #     config["srl_labels"], config["include_c_v"])
@@ -121,6 +128,7 @@ class LSGNData(object):
     self.predict_names = _predict_names
     self.batch_size = self.config["batch_size"]
     dtypes, shapes = zip(*self.input_props)
+
     if self.batch_size > 0 and self.config["max_tokens_per_batch"] < 0:
       # Use fixed batch size if number of words per batch is not limited (-1).
       self.queue_input_tensors = [tf.placeholder(dtype, shape) for dtype, shape in self.input_props]
@@ -179,15 +187,20 @@ class LSGNData(object):
             feed_dict = dict(zip(self.queue_input_tensors, batched_tensor_examples))
             session.run(self.enqueue_op, feed_dict=feed_dict)
           elif adaptive_batching:
+            # Example is a sentence in this case
             for tensor_example in tensor_examples:
               num_tokens = tensor_example["text_len"]
+
+              # Make sure we have a max  tokens per batch, if so just consider that batch and don't add more
               if len(batch_buffer) >= self.config["batch_size"] or (
                   num_tokens_in_batch + num_tokens > self.config["max_tokens_per_batch"]):
+                # Pad each tensor_name in a concatanted matrix, this is a list fo all tensornames matrices
                 batched_tensor_examples = [pad_batch_tensors(batch_buffer, tn) for tn in tensor_names]
                 feed_dict = dict(zip(self.queue_input_tensors, batched_tensor_examples))
                 session.run(self.enqueue_op, feed_dict=feed_dict)
                 batch_buffer = []
                 num_tokens_in_batch = 0
+              # Tensor_example is a dict
               batch_buffer.append(tensor_example)
               num_tokens_in_batch += num_tokens
           else:
@@ -223,6 +236,7 @@ class LSGNData(object):
       text_len = len(sentence)
       coref_mentions = []
       for start, end in gold_mentions:
+        # Reerence started with the start of the sentences and ended before the end of the sentence
         if word_offset <= start and end < word_offset + text_len:
           coref_mentions.append([start, end, cluster_ids[(start, end)]])
       sent_example = {
@@ -268,6 +282,9 @@ class LSGNData(object):
         self.lm_file, self.lm_layers, self.lm_size, lm_doc_key, lm_sent_key, transpose)
 
     max_word_length = max(max(len(w) for w in sentence), max(self.config["filter_widths"]))
+
+
+    # Preapre context word embedding for a sentence
     context_word_emb = np.zeros([text_len, self.context_embeddings.size])
     head_word_emb = np.zeros([text_len, self.head_embeddings.size])
     char_index = np.zeros([text_len, max_word_length])
@@ -294,6 +311,7 @@ class LSGNData(object):
       "tokens": sentence,
       "context_word_emb": context_word_emb,
       "head_word_emb": head_word_emb,
+      # Lm embeddings for a sentence
       "lm_emb": lm_emb,
       "char_idx": char_index,
       "text_len": text_len,
@@ -303,8 +321,11 @@ class LSGNData(object):
       # "gold_predicates": gold_predicates,
       # "num_gold_predicates": len(gold_predicates),
       # Labels.
+      # Word offset to the start of the document since ner_starts is just relevant to the start of the sentence
       "ner_starts": ner_starts - word_offset,
       "ner_ends": ner_ends - word_offset,
+
+      # Ids of the relations reelative to start and end
       "ner_labels": ner_labels,
       # "predicates": predicates - word_offset,
       # "arg_starts": arg_starts - word_offset,

@@ -53,7 +53,7 @@ if __name__ == "__main__":
   log_dir = config["log_dir"]
 
   with tf.Session() as session:
-    checkpoint_path = os.path.join(log_dir, "model.max.ckpt")
+    checkpoint_path = os.path.join(log_dir, "model.ckpt-19158")
     print "Evaluating {}".format(checkpoint_path)
     tf.global_variables_initializer().run()
     saver.restore(session, checkpoint_path)

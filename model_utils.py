@@ -40,8 +40,9 @@ def batch_gather(emb, indices):
   if len(indices.get_shape()) == 3:
     offset = tf.expand_dims(offset, 2)  # [num_sentences, 1, 1]
   return tf.gather(flattened_emb, indices + offset) 
-  
 
+
+# TODO-migrate: custom lstm instead of lstm
 def lstm_contextualize(text_emb, text_len, config, lstm_dropout):
   num_sentences = tf.shape(text_emb)[0]
   current_inputs = text_emb  # [num_sentences, max_sentence_length, emb]
@@ -235,7 +236,8 @@ def get_batch_topk(candidate_starts, candidate_ends, candidate_scores, topk_rati
                     tf.ones([num_sentences,], dtype=tf.int32))  # [num_sentences]
 
   predicted_indices = srl_ops.extract_spans(
-      candidate_scores, candidate_starts, candidate_ends, topk, max_sentence_length,
+      candidate_scores, candidate_starts,
+      candidate_ends, topk, max_sentence_length,
       sort_spans, enforce_non_crossing)  # [num_sentences, max_num_predictions]
   predicted_indices.set_shape([None, None])
 
@@ -463,7 +465,13 @@ def bucket_distance(distances):
   Places the given values (designed for distances) into 10 semi-logscale buckets:
   [0, 1, 2, 3, 4, 5-7, 8-15, 16-31, 32-63, 64+].
   """
-  logspace_idx = tf.to_int32(tf.floor(tf.log(tf.to_float(distances))/math.log(2))) + 3
+  logspace_idx = tf.to_int32(
+      tf.floor(
+          tf.log(
+              tf.to_float(distances)
+          )/math.log(2)
+      )
+  ) + 3
   use_identity = tf.to_int32(distances <= 4)
   combined_idx = use_identity * distances + (1 - use_identity) * logspace_idx
   return tf.minimum(combined_idx, 9)

@@ -35,7 +35,10 @@ public:
     int num_sentences = span_scores.dimension(0);
     int num_input_spans = span_scores.dimension(1);
     int max_num_output_spans = 0;
+
+
     for (int i = 0; i < num_sentences; i++) {
+
       if (num_output_spans(i) > max_num_output_spans) {
         max_num_output_spans = num_output_spans(i);
       }
@@ -69,6 +72,7 @@ public:
         if (_suppress_crossing) {
           const int& start = candidate_starts(l, i);
           const int& end = candidate_ends(l, i);
+
           for (int j = start; j <= end; ++j) {
             if (j > start) {
               auto latest_end_iter = start_to_latest_end.find(j);

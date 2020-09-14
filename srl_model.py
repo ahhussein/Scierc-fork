@@ -59,13 +59,15 @@ class SRLModel(object):
     context_emb, head_emb, self.lm_weights, self.lm_scaling = get_embeddings(
         self.data, sentences, text_len, context_word_emb, head_word_emb, inputs["char_idx"],
         inputs["lm_emb"], self.lexical_dropout)  # [num_sentences, max_sentence_length, emb]
-    
+
+    # Get contexualized vectors with a bidirectional lstm
     context_outputs = lstm_contextualize(
         context_emb, text_len, self.config, self.lstm_dropout)  # [num_sentences, max_sentence_length, emb]
 
     # [num_sentences, max_num_candidates], ...
     candidate_starts, candidate_ends, candidate_mask = get_span_candidates(
         text_len, max_sentence_length, self.config["max_arg_width"])
+
     flat_candidate_mask = tf.reshape(candidate_mask, [-1])  # [num_sentences, max_num_candidates]
     batch_word_offset = tf.expand_dims(tf.cumsum(text_len, exclusive=True), 1)  # [num_sentences, 1]
     flat_candidate_starts = tf.boolean_mask(
@@ -112,7 +114,7 @@ class SRLModel(object):
           candidate_starts, candidate_ends, candidate_entity_scores, self.config["entity_ratio"], text_len,
           max_sentence_length, sort_spans=True, enforce_non_crossing=False)  # Do we need to sort spans?
       entity_span_indices = batch_gather(candidate_span_ids, top_entity_indices)  # [num_sentences, max_num_ents]
-      entity_emb = tf.gather(candidate_span_emb, entity_span_indices)  # [num_sentences, max_num_ents, emb]
+      entity_emb = tf.gather(candidate_span_emb, entity_span_indices)
       max_num_entities = util.shape(entity_scores, 1)
 
 

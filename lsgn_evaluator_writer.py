@@ -1,7 +1,6 @@
 import datetime
 import time
 
-
 import coref_metrics
 import debug_utils
 import inference_utils

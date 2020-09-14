@@ -13,6 +13,8 @@ import tensorflow as tf
 from lsgn_data import LSGNData
 from srl_model import SRLModel
 import util
+from tensorflow.python import debug as tf_debug
+
 
 
 if __name__ == "__main__":
@@ -23,6 +25,7 @@ if __name__ == "__main__":
     name = os.environ["EXP"]
   config = util.get_config("experiments.conf")[name]
   print 'config'
+
   report_frequency = config["report_frequency"]
 
   config["log_dir"] = util.mkdirs(os.path.join(config["log_root"], name))
@@ -53,10 +56,13 @@ if __name__ == "__main__":
   # The supervisor takes care of session initialization, restoring from
   # a checkpoint, and closing when done or an error occurs.
   with sv.managed_session() as session:
+    session = tf_debug.LocalCLIDebugWrapperSession(session)
+
     data.start_enqueue_thread(session)
     accumulated_loss = 0.0
     initial_time = time.time()
     while not sv.should_stop():
+
       tf_loss, tf_global_step, _ = session.run([model.loss, model.global_step, model.train_op])
       accumulated_loss += tf_loss
 

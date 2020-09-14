@@ -12,7 +12,7 @@ import util
 
 
 class LSGNEvaluator(object):
-  def __init__(self, config):
+  def  __init__(self, config):
     self.config = config
     self.eval_data = None
 
@@ -89,6 +89,7 @@ class LSGNEvaluator(object):
       # Relation extraction.
       if "rel" in decoded_predictions:
         rel_predictions.extend(decoded_predictions["rel"])
+
         for j in range(len(sentences)):
           sent_example = self.eval_data[rel_sent_id][3]  # sentence, srl, ner, relations
           text_length = len(sentences[j])

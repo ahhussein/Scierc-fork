@@ -4,6 +4,7 @@ import pdb
 
 def tensorize_labeled_spans(tuples, label_dict):
   if len(tuples) > 0:
+    # Unfolding tuples of ner and coref
     starts, ends, labels = zip(*tuples)
   else:
     starts, ends, labels = [], [], []
@@ -52,7 +53,7 @@ def get_all_predicates(tuples):
   else:
     predicates = []
   return np.unique(predicates)
-  
+
 
 def load_lm_embeddings_for_sentence(lm_file, lm_layers, lm_size, doc_key, sent_key,
                                     transpose):
@@ -83,7 +84,7 @@ def pad_batch_tensors(tensor_dicts, tensor_name):
   """
   batch_size = len(tensor_dicts)
   tensors = [np.expand_dims(td[tensor_name], 0) for td in tensor_dicts]
-  shapes = [t.shape for t in tensors] 
+  shapes = [t.shape for t in tensors]
   # Take max shape along each dimension.
   max_shape = np.max(zip(*shapes), axis=1)
   #print tensor_name, batch_size, tensors[0].shape, max_shape

@@ -45,8 +45,6 @@ def split_example_for_eval(example):
     samples.append((sentence, srl_rels, ner_spans, relations))
     word_offset += len(sentence)
   return samples
-
-
 def evaluate_retrieval(span_starts, span_ends, span_scores, pred_starts, pred_ends, gold_spans,
                        text_length, evaluators, debugging=False):
   """
