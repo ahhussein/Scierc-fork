@@ -393,9 +393,13 @@ def get_rel_softmax_loss(rel_scores, rel_labels, num_predicted_entities):
       labels=tf.reshape(rel_labels, [-1]),
       logits=tf.reshape(rel_scores, [-1, num_labels]),
       name="srl_softmax_loss")  # [num_sentences * max_num_args * max_num_preds]
+  #loss = tf.Print(loss, [loss, rel_scores], 'loss')
+
   loss = tf.boolean_mask(loss, tf.reshape(rel_loss_mask, [-1]))
   loss.set_shape([None])
   loss = tf.reduce_sum(loss)
+  loss = tf.Print(loss, [loss], 'reduced loss')
+
   return loss
 
 
