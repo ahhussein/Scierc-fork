@@ -63,6 +63,7 @@ if __name__ == "__main__":
   evaluated_checkpoints = set()
   max_f1 = 0
   best_task_f1 = {}
+
   checkpoint_pattern = re.compile(".*model.ckpt-([0-9]*)\Z")
 
   with tf.Session() as session:

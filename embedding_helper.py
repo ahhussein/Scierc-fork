@@ -28,6 +28,7 @@ def get_embeddings(data, sentences, text_len, context_word_emb, head_word_emb, c
     char_emb = tf.gather(
         tf.get_variable("char_embeddings", [len(data.char_dict), data.char_embedding_size]),
         char_index)  # [num_sentences, max_sentence_length, max_word_length, emb]
+
     flattened_char_emb = tf.reshape(
         char_emb,
         [
@@ -86,5 +87,6 @@ def get_embeddings(data, sentences, text_len, context_word_emb, head_word_emb, c
   head_emb = tf.concat(head_emb_list, 2)  # [num_sentences, max_sentence_length, emb]
   context_emb = tf.nn.dropout(context_emb, lexical_dropout)
   head_emb = tf.nn.dropout(head_emb, lexical_dropout)
+
   return context_emb, head_emb, lm_weights, lm_scaling
 

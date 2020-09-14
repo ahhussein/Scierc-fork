@@ -32,6 +32,9 @@ class SRLModel(object):
         self.config["decay_rate"], staircase=True)
     trainable_params = tf.trainable_variables()
     gradients = tf.gradients(self.loss, trainable_params)
+    for index, grad in enumerate(gradients):
+        tf.summary.histogram("{}-grad".format(gradients[index].name), gradients[index])
+
     gradients, _ = tf.clip_by_global_norm(gradients, self.config["max_gradient_norm"])
     optimizers = {
       "adam" : tf.train.AdamOptimizer,
@@ -39,7 +42,8 @@ class SRLModel(object):
     }
     optimizer = optimizers[self.config["optimizer"]](learning_rate)
     self.train_op = optimizer.apply_gradients(zip(gradients, trainable_params), global_step=self.global_step)
-    # For debugging.
+
+        # For debugging.
     # for var in tf.trainable_variables():
     #  print var
 
@@ -107,6 +111,10 @@ class SRLModel(object):
     if self.config["relation_weight"] > 0:
       flat_candidate_entity_scores = get_unary_scores(
           candidate_span_emb, self.config, self.dropout, 1, "entity_scores")  # [num_candidates,]
+
+      #candidate_span_emb = tf.Print(candidate_span_emb, [candidate_span_emb[:1]], summarize=10000)
+
+
       candidate_entity_scores = tf.gather(
           flat_candidate_entity_scores, candidate_span_ids) + spans_log_mask  # [num_sentences, max_num_candidates] 
       # [num_sentences, max_num_ents], ... [num_sentences,], [num_sentences, max_num_ents] 
@@ -122,6 +130,8 @@ class SRLModel(object):
     if self.config["coref_weight"] > 0:
       candidate_mention_scores = get_unary_scores(
           candidate_span_emb, self.config, self.dropout, 1, "mention_scores")  # [num_candidates]
+
+
       #if self.config["span_score_weight"] > 0:
       #  candidate_mention_scores += self.config["span_score_weight"] * flat_span_scores
 
@@ -177,6 +187,8 @@ class SRLModel(object):
       antecedent_scores, antecedent_emb, pair_emb = get_antecedent_scores(
           mention_emb, mention_scores, antecedents, self.config, self.dropout
       )  # [k, max_ant]
+
+
       antecedent_scores = tf.concat([
           tf.zeros([k, 1]), antecedent_scores + antecedent_log_mask], 1)  # [k, max_ant+1]
 
@@ -190,6 +202,7 @@ class SRLModel(object):
       rel_labels = get_relation_labels(
           entity_starts, entity_ends, num_entities, labels, max_sentence_length
       )  # [num_sentences, max_num_ents, max_num_ents]
+
       rel_scores = get_rel_scores(
           entity_emb, entity_scores, len(self.data.rel_labels), self.config, self.dropout
       )  # [num_sentences, max_num_ents, max_num_ents, num_labels]
@@ -218,10 +231,17 @@ class SRLModel(object):
       same_cluster_indicator = tf.equal(
           antecedent_cluster_ids, tf.expand_dims(mention_cluster_ids, 1))  # [k, max_ant]
       non_dummy_indicator = tf.expand_dims(mention_cluster_ids > 0, 1)  # [k, 1]
+
       pairwise_labels = tf.logical_and(same_cluster_indicator, non_dummy_indicator)  # [k, max_ant]
 
       dummy_labels = tf.logical_not(tf.reduce_any(pairwise_labels, 1, keep_dims=True))  # [k, 1]
       antecedent_labels = tf.concat([dummy_labels, pairwise_labels], 1)  # [k, max_ant+1]
+      zero = tf.constant(False, dtype=tf.bool)
+      where = tf.not_equal(antecedent_labels, zero)
+      indices = tf.where(where)
+
+      #antecedent_labels = tf.Print(antecedent_labels, [indices], 'antecedent_labels', summarize=1000)
+
       coref_loss = get_coref_softmax_loss(antecedent_scores, antecedent_labels)  # [k]
       coref_loss = tf.reduce_sum(coref_loss) # / tf.to_float(num_sentences)  # []
       predict_dict.update({
@@ -242,6 +262,7 @@ class SRLModel(object):
       flat_ner_scores = get_unary_scores(
           candidate_span_emb, self.config, self.dropout, len(self.data.ner_labels) - 1,
           "ner_scores")  # [num_candidates, num_labels-1]
+
       if self.config["span_score_weight"] > 0:
         #flat_ner_scores += self.config["span_score_weight"] * tf.expand_dims(flat_span_scores, 1)
         flat_ner_scores += self.config["span_score_weight"] * tf.expand_dims(flat_candidate_entity_scores, 1)

@@ -6,6 +6,8 @@ sys.path.append(os.getcwd())
 import json
 import time
 import random
+from tensorflow.python import debug as tfd
+
 
 import numpy as np
 import tensorflow as tf
@@ -56,7 +58,7 @@ if __name__ == "__main__":
   # The supervisor takes care of session initialization, restoring from
   # a checkpoint, and closing when done or an error occurs.
   with sv.managed_session() as session:
-    session = tf_debug.LocalCLIDebugWrapperSession(session)
+    #session = tfd.LocalCLIDebugWrapperSession(session)
 
     data.start_enqueue_thread(session)
     accumulated_loss = 0.0

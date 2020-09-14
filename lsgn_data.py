@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tensorflow_hub as hub
+#import tensorflow_hub as hub
 
 import h5py
 import json
@@ -71,7 +71,7 @@ class LSGNData(object):
     if config["lm_path"]:
       if "tfhub" in config["lm_path"]:
         print "Using tensorflow hub:", config["lm_path"]
-        self.lm_hub = hub.Module(config["lm_path"].encode("utf-8"), trainable=False) 
+        #self.lm_hub = hub.Module(config["lm_path"].encode("utf-8"), trainable=False)
       else:
 
         # TODO-Ahmed investigate lm
@@ -110,7 +110,7 @@ class LSGNData(object):
         (tf.bool, []),  # Is training.
         (tf.int32, [None]),  # NER starts.
         (tf.int32, [None]),  # NER ends.
-        (tf.int32, [None]),  # NER labels.
+        (tf.int32, [None]),  # NER labels. 10
         (tf.int32, []),  # Number of NER spans.
         (tf.int32, [None]),  # Coref mention starts.
         (tf.int32, [None]),  # Coref mention ends.
