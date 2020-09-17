@@ -32,8 +32,10 @@ class SRLModel(object):
         self.config["decay_rate"], staircase=True)
     trainable_params = tf.trainable_variables()
     gradients = tf.gradients(self.loss, trainable_params)
+    for v in trainable_params:
+        tf.summary.histogram("params/{}".format(v.name), v)
     for index, grad in enumerate(gradients):
-        tf.summary.histogram("{}-grad".format(gradients[index].name), gradients[index])
+        tf.summary.histogram("grads/{}".format(gradients[index].name), gradients[index])
 
     gradients, _ = tf.clip_by_global_norm(gradients, self.config["max_gradient_norm"])
     optimizers = {
